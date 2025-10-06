@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ブロックキャッチゲーム</title>
+  <style>
+    body {
+      background: #111;
+      color: #fff;
+      text-align: center;
+      font-family: sans-serif;
+    }
+    canvas {
+      background: #222;
+      display: block;
+      margin: 40px auto;
+      border: 2px solid #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>ブロックキャッチゲーム</h1>
+  <canvas id="gameCanvas" width="400" height="400"></canvas>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const player = { x: 160, y: 370, w: 80, h: 15 };
+    let block = { x: Math.random() * 370, y: 0, size: 30, speed: 3 };
+
+    let score = 0;
+    let misses = 0;
+    let gameOver = false;
+
+    // マウス操作
+    canvas.addEventListener("mousemove", e => {
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      player.x = mouseX - player.w / 2;
+      if (player.x < 0) player.x = 0;
+      if (player.x + player.w > canvas.width) player.x = canvas.width - player.w;
+    });
+
+    function drawPlayer() {
+      ctx.fillStyle = "skyblue";
+      ctx.fillRect(player.x, player.y, player.w, player.h);
+    }
+
+    function drawBlock() {
+      ctx.fillStyle = "orange";
+      ctx.fillRect(block.x, block.y, block.size, block.size);
+    }
+
+    function drawScore() {
+      ctx.fillStyle = "white";
+      ctx.font = "18px sans-serif";
+      ctx.fillText("Score: " + score, 10, 25);
+      ctx.fillText("Misses: " + misses, 310, 25);
+    }
+
+    function drawGameOver() {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "white";
+      ctx.font = "30px sans-serif";
+      ctx.fillText("GAME OVER", 110, 180);
+      ctx.font = "20px sans-serif";
+      ctx.fillText("Score: " + score, 160, 220);
+      ctx.fillText("クリックでリスタート", 110, 260);
+    }
+
+    function resetBlock() {
+      block.x = Math.random() * (canvas.width - block.size);
+      block.y = 0;
+      block.speed += 0.2; // スピードアップ
+    }
+
+    function update() {
+      if (gameOver) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // ブロック落下
+      block.y += block.speed;
+
+      // キャッチ判定
+      if (
+        block.y + block.size >= player.y &&
+        block.x + block.size > player.x &&
+        block.x < player.x + player.w
+      ) {
+        score++;
+        resetBlock();
+      }
+
+      // ミス判定
+      if (block.y > canvas.height) {
+        misses++;
+        if (misses >= 3) {
+          gameOver = true;
+        } else {
+          resetBlock();
+        }
+      }
+
+      drawPlayer();
+      drawBlock();
+      drawScore();
+
+      if (!gameOver) {
+        requestAnimationFrame(update);
+      } else {
+        drawGameOver();
+      }
+    }
+
+    // ゲームリセット
+    canvas.addEventListener("click", () => {
+      if (gameOver) {
+        score = 0;
+        misses = 0;
+        block.speed = 3;
+        gameOver = false;
+        resetBlock();
+        update();
+      }
+    });
+
+    update();
+  </script>
+</body>
+</html>
