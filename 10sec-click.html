@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>10秒クリックゲーム</title>
+  <style>
+    body { text-align: center; font-family: sans-serif; }
+    button { font-size: 24px; padding: 20px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>10秒クリックチャレンジ</h1>
+  <p>残り時間: <span id="time">10</span> 秒</p>
+  <p>スコア: <span id="score">0</span></p>
+  <button id="start">スタート</button>
+  <button id="clickBtn" disabled>クリック！</button>
+
+  <script>
+    let score = 0;
+    let timeLeft = 10;
+    let timerId = null;
+
+    const scoreEl = document.getElementById("score");
+    const timeEl = document.getElementById("time");
+    const startBtn = document.getElementById("start");
+    const clickBtn = document.getElementById("clickBtn");
+
+    // スタートボタン
+    startBtn.onclick = function() {
+      score = 0;
+      timeLeft = 10;
+      scoreEl.textContent = score;
+      timeEl.textContent = timeLeft;
+
+      startBtn.disabled = true;
+      clickBtn.disabled = false;
+
+      timerId = setInterval(function() {
+        timeLeft--;
+        timeEl.textContent = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(timerId);
+          clickBtn.disabled = true;
+          startBtn.disabled = false;
+          alert("終了！ あなたのスコアは " + score + " 回です！");
+        }
+      }, 1000);
+    };
+
+    // クリックボタン
+    clickBtn.onclick = function() {
+      score++;
+      scoreEl.textContent = score;
+    };
+  </script>
+</body>
+</html>
