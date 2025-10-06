@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>テトリス風</title>
+<style>
+  canvas { background: #eee; display: block; margin: auto; }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas" width="200" height="400"></canvas>
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+const blockSize = 20;
+const rows = canvas.height / blockSize;
+const cols = canvas.width / blockSize;
+
+let field = Array.from({ length: rows }, () => Array(cols).fill(0));
+
+const tetrominoes = [
+  [[1,1,1,1]],             // I
+  [[1,1],[1,1]],           // O
+  [[0,1,0],[1,1,1]],       // T
+  [[1,0,0],[1,1,1]],       // L
+  [[0,0,1],[1,1,1]],       // J
+  [[0,1,1],[1,1,0]],       // S
+  [[1,1,0],[0,1,1]],       // Z
+];
+
+let block;
+let score = 0;
+
+// 新しいブロック生成（ゲームオーバー判定含む）
+function createBlock() {
+  const shape = tetrominoes[Math.floor(Math.random() * tetrominoes.length)];
+  const newBlock = {
+    x: Math.floor(cols / 2) - Math.floor(shape[0].length / 2),
+    y: 0,
+    shape: shape
+  };
+
+  if (isCollide(newBlock.x, newBlock.y, newBlock.shape)) {
+    alert("Game Over!");
+    field = Array.from({ length: rows }, () => Array(cols).fill(0)); // フィールド初期化
+    score = 0; // スコア初期化
+  }
+
+  return newBlock;
+}
+
+block = createBlock();
+
+function drawField() {
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      if (field[y][x]) {
+        ctx.fillStyle = "blue";
+        ctx.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
+        ctx.strokeRect(x * blockSize, y * blockSize, blockSize, blockSize);
+      }
+    }
+  }
+}
+
+function drawBlock() {
+  ctx.fillStyle = "red";
+  for (let y = 0; y < block.shape.length; y++) {
+    for (let x = 0; x < block.shape[y].length; x++) {
+      if (block.shape[y][x]) {
+        ctx.fillRect((block.x + x) * blockSize, (block.y + y) * blockSize, blockSize, blockSize);
+        ctx.strokeRect((block.x + x) * blockSize, (block.y + y) * blockSize, blockSize, blockSize);
+      }
+    }
+  }
+}
+
+function isCollide(nx, ny, shape) {
+  for (let y = 0; y < shape.length; y++) {
+    for (let x = 0; x < shape[y].length; x++) {
+      if (shape[y][x]) {
+        let newX = nx + x;
+        let newY = ny + y;
+        if (newX < 0 || newX >= cols || newY >= rows) return true;
+        if (field[newY][newX]) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function mergeBlock() {
+  for (let y = 0; y < block.shape.length; y++) {
+    for (let x = 0; x < block.shape[y].length; x++) {
+      if (block.shape[y][x]) {
+        field[block.y + y][block.x + x] = 1;
+      }
+    }
+  }
+}
+
+function clearLines() {
+  let linesCleared = 0;
+  for (let y = rows - 1; y >= 0; y--) {
+    if (field[y].every(cell => cell === 1)) {
+      field.splice(y, 1);
+      field.unshift(Array(cols).fill(0));
+      linesCleared++;
+      y++;
+    }
+  }
+  if (linesCleared > 0) {
+    score += linesCleared * 100;
+  }
+}
+
+function drawScore() {
+  ctx.fillStyle = "black";
+  ctx.font = "16px Arial";
+  ctx.fillText("Score: " + score, 10, 20);
+}
+
+function update() {
+  if (!isCollide(block.x, block.y + 1, block.shape)) {
+    block.y++;
+  } else {
+    mergeBlock();
+    clearLines();
+    block = createBlock();
+  }
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawField();
+  drawBlock();
+  drawScore();
+}
+
+setInterval(update, 500);
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowLeft" && !isCollide(block.x - 1, block.y, block.shape)) block.x--;
+  if (e.key === "ArrowRight" && !isCollide(block.x + 1, block.y, block.shape)) block.x++;
+  if (e.key === "ArrowDown" && !isCollide(block.x, block.y + 1, block.shape)) block.y++;
+  if (e.key === "ArrowUp") {
+    const rotated = rotate(block.shape);
+    if (!isCollide(block.x, block.y, rotated)) block.shape = rotated;
+  }
+});
+
+function rotate(shape) {
+  return shape[0].map((_, i) => shape.map(row => row[i])).reverse();
+}
+</script>
+</body>
+</html>
+
+
+
