@@ -13,33 +13,80 @@
     canvas {
       background: #222;
       display: block;
-      margin: 40px auto;
+      margin: 40px auto 10px;
       border: 2px solid #555;
+    }
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-top: 10px;
+    }
+    button {
+      background: #333;
+      color: white;
+      font-size: 30px;
+      border: 2px solid #666;
+      border-radius: 10px;
+      width: 70px;
+      height: 70px;
+      cursor: pointer;
+      user-select: none;
+    }
+    button:active {
+      background: #555;
     }
   </style>
 </head>
 <body>
   <h1>ブロックキャッチゲーム</h1>
   <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+  <div class="controls">
+    <button id="leftBtn">←</button>
+    <button id="rightBtn">→</button>
+  </div>
+
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    const player = { x: 160, y: 370, w: 80, h: 15 };
+    const player = { x: 160, y: 370, w: 80, h: 15, speed: 6 };
     let block = { x: Math.random() * 370, y: 0, size: 30, speed: 3 };
-
     let score = 0;
     let misses = 0;
     let gameOver = false;
 
-    // マウス操作
-    canvas.addEventListener("mousemove", e => {
-      const rect = canvas.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      player.x = mouseX - player.w / 2;
-      if (player.x < 0) player.x = 0;
-      if (player.x + player.w > canvas.width) player.x = canvas.width - player.w;
+    let moveLeft = false;
+    let moveRight = false;
+    let timeLimit = 30; // 制限時間（秒）
+    let timeLeft = timeLimit;
+    let timerId = null;
+
+    // === キーボード操作 ===
+    document.addEventListener("keydown", e => {
+      if (e.key === "ArrowLeft") moveLeft = true;
+      if (e.key === "ArrowRight") moveRight = true;
     });
+    document.addEventListener("keyup", e => {
+      if (e.key === "ArrowLeft") moveLeft = false;
+      if (e.key === "ArrowRight") moveRight = false;
+    });
+
+    // === ボタン操作 ===
+    const leftBtn = document.getElementById("leftBtn");
+    const rightBtn = document.getElementById("rightBtn");
+
+    leftBtn.addEventListener("mousedown", () => moveLeft = true);
+    rightBtn.addEventListener("mousedown", () => moveRight = true);
+    leftBtn.addEventListener("mouseup", () => moveLeft = false);
+    rightBtn.addEventListener("mouseup", () => moveRight = false);
+
+    // スマホ対応（タッチ）
+    leftBtn.addEventListener("touchstart", e => { moveLeft = true; e.preventDefault(); });
+    rightBtn.addEventListener("touchstart", e => { moveRight = true; e.preventDefault(); });
+    leftBtn.addEventListener("touchend", e => { moveLeft = false; e.preventDefault(); });
+    rightBtn.addEventListener("touchend", e => { moveRight = false; e.preventDefault(); });
 
     function drawPlayer() {
       ctx.fillStyle = "skyblue";
@@ -56,29 +103,42 @@
       ctx.font = "18px sans-serif";
       ctx.fillText("Score: " + score, 10, 25);
       ctx.fillText("Misses: " + misses, 310, 25);
+      ctx.fillText("Time: " + timeLeft + "s", 170, 25);
     }
 
-    function drawGameOver() {
+    function drawGameOver(message) {
       ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = "white";
       ctx.font = "30px sans-serif";
-      ctx.fillText("GAME OVER", 110, 180);
+      ctx.fillText(message, 120, 170);
       ctx.font = "20px sans-serif";
-      ctx.fillText("Score: " + score, 160, 220);
-      ctx.fillText("クリックでリスタート", 110, 260);
+      ctx.fillText("Score: " + score, 160, 210);
+      ctx.fillText("クリックでリスタート", 110, 250);
     }
 
     function resetBlock() {
       block.x = Math.random() * (canvas.width - block.size);
       block.y = 0;
-      block.speed += 0.2; // スピードアップ
+      block.speed += 0.2;
+    }
+
+    function endGame(message) {
+      gameOver = true;
+      clearInterval(timerId);
+      drawGameOver(message);
     }
 
     function update() {
       if (gameOver) return;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // プレイヤー移動
+      if (moveLeft) player.x -= player.speed;
+      if (moveRight) player.x += player.speed;
+      if (player.x < 0) player.x = 0;
+      if (player.x + player.w > canvas.width) player.x = canvas.width - player.w;
 
       // ブロック落下
       block.y += block.speed;
@@ -97,7 +157,7 @@
       if (block.y > canvas.height) {
         misses++;
         if (misses >= 3) {
-          gameOver = true;
+          endGame("GAME OVER");
         } else {
           resetBlock();
         }
@@ -109,9 +169,18 @@
 
       if (!gameOver) {
         requestAnimationFrame(update);
-      } else {
-        drawGameOver();
       }
+    }
+
+    // タイマー管理
+    function startTimer() {
+      timeLeft = timeLimit;
+      timerId = setInterval(() => {
+        timeLeft--;
+        if (timeLeft <= 0) {
+          endGame("TIME UP!");
+        }
+      }, 1000);
     }
 
     // ゲームリセット
@@ -122,11 +191,18 @@
         block.speed = 3;
         gameOver = false;
         resetBlock();
+        startTimer();
         update();
       }
     });
 
+    // ゲーム開始
+    startTimer();
     update();
+  </script>
+</body>
+</html>
+ update();
   </script>
 </body>
 </html>
